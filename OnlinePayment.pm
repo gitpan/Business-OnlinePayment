@@ -11,7 +11,7 @@ require 5.004;
 #@EXPORT = qw();
 #@EXPORT_OK = qw();
 
-$VERSION = '3.00_02';
+$VERSION = '3.00_03';
 sub VERSION { #Argument "3.00_01" isn't numeric in subroutine entry
   local($^W)=0;
   UNIVERSAL::VERSION(@_);

@@ -9,7 +9,7 @@ use Tie::IxHash;
 
 @ISA = qw( Business::OnlinePayment );
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 $DEBUG = 0;
 
@@ -152,11 +152,13 @@ sub https_get {
 
 }
 
-=item https_post HASHREF | FIELD => VALUE, ...
+=item https_post SCALAR | HASHREF | FIELD => VALUE, ...
 
-Accepts parameters as either a hashref or a list of fields and values.  In the
-latter case, ordering is preserved (see L<Tie::IxHash> to do so when passing a
+Accepts form fields and values as either a hashref or a list.  In the latter
+case, ordering is preserved (see L<Tie::IxHash> to do so when passing a
 hashref).
+
+Also accepts instead a simple scalar containing the raw content.
 
 Returns a list consisting of the page content as a string, the HTTP response
 code, and a list of key/value pairs representing the HTTP response headers.
@@ -168,11 +170,15 @@ sub https_post {
 
   #accept a hashref or a list (keep it ordered)
   my $post_data;
-  if ( ref($_[0]) ) {
+  if ( ref($_[0]) eq 'HASH' ) {
     $post_data = shift;
-  } else {
+  } elsif ( scalar(@_) > 1 ) {
     tie my %hash, 'Tie::IxHash', @_;
     $post_data = \%hash;
+  } elsif ( scalar(@_) == 1 ) {
+    $post_data = shift;
+  } else {
+    die "https_post called with no params\n";
   }
 
   my $referer = ''; ### XXX referer!!!
@@ -180,7 +186,7 @@ sub https_post {
   $headers{'Referer'} = $referer if length($referer);
   $headers{'Host'} = $self->server;
 
-  if ( $DEBUG ) {
+  if ( $DEBUG && ref($post_data) ) {
     warn join('', map { "  $_ => ". $post_data->{$_}. "\n" } keys %$post_data );
   }
 
@@ -196,8 +202,10 @@ sub https_post {
     }
     #post_https( $self->server, $self->port, $self->path,
     #            $headers, make_form(%$post_data)  );
+
+    my $raw_data = ref($post_data) ? make_form(%$post_data) : $post_data;
     _my_post_https( $self->server, $self->port, $self->path,
-                    $headers, make_form(%$post_data)  );
+                    $headers, $raw_data );
 
   } elsif ( $ssl_module eq 'Crypt::SSLeay' ) {
 
@@ -213,7 +221,16 @@ sub https_post {
     }
 
     my $ua = new LWP::UserAgent;
-    my $res = $ua->request( POST( $url, [ %$post_data ] ) );
+
+    my $res;
+    if ( ref($post_data) ) {
+      $res = $ua->request( POST( $url, [ %$post_data ] ) );
+    } else {
+      my $req =new HTTP::Request( 'POST' => $url );
+      $req->content_type('application/x-www-form-urlencoded');
+      $req->content($post_data);
+      $res = $ua->request($req);
+    }
 
     #( $res->as_string, # wtf?
     ( $res->content,
