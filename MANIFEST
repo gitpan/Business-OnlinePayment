@@ -4,3 +4,4 @@ MANIFEST
 Makefile.PL
 OnlinePayment.pm
 test.pl
+notes_for_module_writers

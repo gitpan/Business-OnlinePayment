@@ -1,6 +1,6 @@
 package Business::OnlinePayment;
 
-# $Id: OnlinePayment.pm,v 1.5 1999/07/28 01:01:39 robobob Exp $
+# $Id: OnlinePayment.pm,v 1.7 1999/10/01 18:37:26 robobob Exp $
 
 use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $AUTOLOAD);
@@ -11,7 +11,7 @@ require Exporter;
 @ISA = qw(Exporter AutoLoader);
 @EXPORT = qw();
 @EXPORT_OK = qw();
-( $VERSION ) = '$Revision: 1.5 $ ' =~ /\$Revision:\s+([^\s]+)/;
+( $VERSION ) = '$Revision: 1.7 $ ' =~ /\$Revision:\s+([^\s]+)/;
 use Carp();
 
 my %fields = (
@@ -69,12 +69,21 @@ sub content {
 }
 
 sub required_fields {
-    my($self,%fields) = @_;
+    my($self,@fields) = @_;
 
     my %content = $self->content();
-    foreach(%fields) {
+    foreach(@fields) {
         Carp::croak("missing required field $_") unless exists $content{$_};
     }
+}
+
+sub get_fields {
+    my($self,@fields) = @_;
+
+    my %content = $self->content();
+    my %new = ();
+    foreach(@fields) { $new{$_} = $content{$_}; }
+    return %new;
 }
 
 sub remap_fields {
@@ -211,6 +220,22 @@ The customers state (your processor may not require this unless you are requirin
 
 The customers zip code (your processor may not require this unless you are requiring AVS Verification).
 
+=item * country
+
+Customer's country.
+
+=item * phone
+
+Customer's phone number.
+
+=item * fax
+
+Customer's fax number.
+
+=item * email
+
+Customer's email address.
+
 =item * card_number
 
 Credit card number (obviously not required for non-credit card transactions).
@@ -218,6 +243,18 @@ Credit card number (obviously not required for non-credit card transactions).
 =item * exp_date
 
 Credit card expiration (obviously not required for non-credit card transactions).
+
+=item * account_number
+
+Bank account number for electronic checks or electronic funds transfer.
+
+=item * routing_code
+
+Bank's routing code for electronic checks or electronic funds transfer.
+
+=item * bank_name
+
+Bank's name for electronic checks or electronic funds transfer.
 
 =back
 
