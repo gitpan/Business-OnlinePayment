@@ -4,8 +4,17 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     'NAME'         => 'Business::OnlinePayment',
     'VERSION_FROM' => 'OnlinePayment.pm', # finds $VERSION
-    'AUTHOR'       => 'Jason Kohles <email@jasonkohles.com>',
+    'AUTHOR'       => 'Ivan Kohler <ivan-business-onlinepayment@420.am>',
     'NORECURS'     => 1, # dont descend into subdirectories
-    'PREREQ_PM'    => {'Net::SSLeay' => 0},
+    'PREREQ_PM'    => { 
+                        # for HTTPS (maybe it should be a separate dist?)
+                        'URI::Escape' => 0,
+                        'Tie::IxHash' => 0,
+
+                        # 'Net::SSLeay' => 0,
+                        # or 'Crypt::SSLeay' => 0,
+                        #    'URI
+
+                      },
     #'dist'         => {CI => 'ci -l'},
 );

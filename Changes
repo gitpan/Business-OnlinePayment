@@ -1,5 +1,8 @@
 Revision history for Perl extension Business::OnlinePayment.
 
+3.00_01  Thu Aug 26 04:49:26 2004
+	- first of the v3 dev releases
+
 0.01  Sun Jul 25 13:59:10 1999
 	- original version; created by h2xs 1.19
 

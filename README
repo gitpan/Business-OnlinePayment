@@ -1,7 +1,8 @@
 *****************************************************************************
-* Copyright (c) 1999-2004 Jason Kohles. All rights reserved. This program   *
-* is free software; you can redistribute it and/or modify it under the same *
-* terms as Perl itself.                                                     *
+* Copyright (c) 1999-2004 Jason Kohles.                                     *
+* Copyright (c) 2004 Ivan Kohler                                            *
+* All rights reserved. This program is free software; you can redistribute  *
+* it and/or modify it under the same terms as Perl itself.                  *
 *****************************************************************************
 
 Business::OnlinePayment is a generic interface for processing payments through
@@ -11,8 +12,11 @@ solution").
 
 IMPORTANT: Business::OnlinePayment only defines the frontend interface to the
 system, in order to use it you also need to have at least one backend
-processing module installed, there used to be a list here, but so many people
-have contributed backends now that it is easier to search CPAN to find them.
+processing module installed.
 
-http://search.cpan.org/search?m=all&q=Business::OnlinePayment::
+Homepage:
+  http://420.am/business-onlinepayment/
+
+Search CPAN for backends:
+  http://search.cpan.org/search?m=all&q=Business::OnlinePayment::
 

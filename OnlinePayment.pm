@@ -1,18 +1,21 @@
 package Business::OnlinePayment;
 
 use strict;
-use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $AUTOLOAD);
+use vars qw($VERSION); # @ISA @EXPORT @EXPORT_OK $AUTOLOAD);
+use Carp;
 
 require 5.004;
-require Exporter;
+#require Exporter;
 
-@ISA = qw(Exporter AutoLoader);
-@EXPORT = qw();
-@EXPORT_OK = qw();
+#@ISA = (); #qw(Exporter AutoLoader);
+#@EXPORT = qw();
+#@EXPORT_OK = qw();
 
-$VERSION = do { my @r=(q$Revision: 2.1 $=~/\d+/g);sprintf "%d."."%02d"x$#r,@r};
-
-use Carp();
+$VERSION = '3.00_01';
+sub VERSION { #Argument "3.00_01" isn't numeric in subroutine entry
+  local($^W)=0;
+  UNIVERSAL::VERSION(@_);
+}
 
 my %fields = (
     is_success       => undef,
@@ -78,19 +81,21 @@ sub required_fields {
 }
 
 sub get_fields {
-    my($self,@fields) = @_;
+    my($self, @fields) = @_;
 
     my %content = $self->content();
-    my %new = ();
-    foreach(@fields) { $new{$_} = $content{$_}; }
-    return %new;
+
+    #my %new = ();
+    #foreach(@fields) { $new{$_} = $content{$_}; }
+    #return %new;
+    map { $_ => $content{$_} } grep defined $content{$_}, @fields;
 }
 
 sub remap_fields {
     my($self,%map) = @_;
 
     my %content = $self->content();
-    foreach(%map) {
+    foreach( keys %map ) {
         $content{$map{$_}} = $content{$_};
     }
     $self->content(%content);
@@ -302,9 +307,11 @@ Retrieve or change the processor submission port (CHANGE AT YOUR OWN RISK).
 
 Retrieve or change the processor submission path (CHANGE AT YOUR OWN RISK).
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 Jason Kohles, email@jasonkohles.com
+
+(v3 rewrite) Ivan Kohler <ivan-business-onlinepayment@420.am>
 
 =head1 DISCLAIMER
 
@@ -314,6 +321,8 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 
 =head1 SEE ALSO
+
+http://420.am/business-onlinepayment/
 
 For verification of credit card checksums, see L<Business::CreditCard>.
 

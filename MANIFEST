@@ -3,6 +3,8 @@ Changes
 MANIFEST
 Makefile.PL
 OnlinePayment.pm
-test.pl
+OnlinePayment/HTTPS.pm
+t/bop.t
+t/bop_https.t
 notes_for_module_writers
 META.yml                                 Module meta-data (added by MakeMaker)

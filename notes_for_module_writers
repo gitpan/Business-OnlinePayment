@@ -1,4 +1,8 @@
-$Id: notes_for_module_writers,v 1.1 1999/10/01 18:37:26 robobob Exp $
+These are the old v2 notes.  Business::OnlinePayment::OpenECHO is the first
+"v3-ish" module, if you're writing an HTTPS-interface module, try starting
+from there until there's better v3 module writer's docs.
+
+$Id: notes_for_module_writers,v 1.2 2004/09/03 23:20:25 ivan Exp $
 
 Information on creating a new processor backend to go with
 Business::OnlinePayment.
