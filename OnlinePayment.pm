@@ -1,6 +1,6 @@
 package Business::OnlinePayment;
 
-# $Id: OnlinePayment.pm,v 1.8 1999/10/10 05:47:41 robobob Exp $
+# $Id: OnlinePayment.pm,v 2.0 1999/10/10 05:56:29 robobob Exp robobob $
 
 use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $AUTOLOAD);
@@ -11,7 +11,8 @@ require Exporter;
 @ISA = qw(Exporter AutoLoader);
 @EXPORT = qw();
 @EXPORT_OK = qw();
-$VERSION = do { my @r=(q$Revision: 1.8 $=~/\d+/g);sprintf "%d."."%02d"x$#r,@r};
+
+$VERSION = do { my @r=(q$Revision: 2.0 $=~/\d+/g);sprintf "%d."."%02d"x$#r,@r};
 
 use Carp();
 
