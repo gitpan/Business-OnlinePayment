@@ -1,7 +1,5 @@
 package Business::OnlinePayment;
 
-# $Id: OnlinePayment.pm,v 2.0 1999/10/10 05:56:29 robobob Exp robobob $
-
 use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $AUTOLOAD);
 
@@ -12,7 +10,7 @@ require Exporter;
 @EXPORT = qw();
 @EXPORT_OK = qw();
 
-$VERSION = do { my @r=(q$Revision: 2.0 $=~/\d+/g);sprintf "%d."."%02d"x$#r,@r};
+$VERSION = do { my @r=(q$Revision: 2.1 $=~/\d+/g);sprintf "%d."."%02d"x$#r,@r};
 
 use Carp();
 
@@ -306,7 +304,7 @@ Retrieve or change the processor submission path (CHANGE AT YOUR OWN RISK).
 
 =head1 AUTHOR
 
-Jason S Kohles, jason@mediabang.com
+Jason Kohles, email@jasonkohles.com
 
 =head1 DISCLAIMER
 
