@@ -1,0 +1,22 @@
+*****************************************************************************
+* Copyright (c) 1999 Jason Kohles. All rights reserved. This program is free *
+* software; you can redistribute it and/or modify it under the same terms as *
+* Perl itself.                                                               *
+*****************************************************************************
+
+Business::OnlinePayment is a generic interface for processing payments through
+online credit card processors, online check acceptance houses, etc.  (If you
+like buzzwords, call it an "multiplatform ecommerce-enabling middleware
+solution").
+
+IMPORTANT: Business::OnlinePayment only defines the frontend interface to the
+system, in order to use it you also need to have at least one backend
+processing module installed, the processors supported are listed below along
+with the types of transactions supported.
+
+Currently supported processors and transaction types include:
+
+    AuthorizeNet 2.5 (http://www.authorize.net/)
+    Business::OnlinePayment::AuthorizeNet
+        VISA MASTERCARD AMEX DISCOVER
+
