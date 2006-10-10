@@ -9,7 +9,7 @@ use Tie::IxHash;
 
 @ISA = qw( Business::OnlinePayment );
 
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 $DEBUG = 0;
 
@@ -20,6 +20,7 @@ BEGIN {
         eval {
                 die if defined($skip_NetSSLeay) && $skip_NetSSLeay;
                 require Net::SSLeay;
+                Net::SSLeay->VERSION(1.30);
                 #import Net::SSLeay
                 #  qw(get_https post_https make_form make_headers);
                 $ssl_module = 'Net::SSLeay';
@@ -36,7 +37,8 @@ BEGIN {
         }
 
         unless ( $ssl_module ) {
-                die "Net::SSLeay or Crypt::SSLeay (+LWP) is required";
+                die "One of Net::SSLeay (v1.30 or later)".
+                    " or Crypt::SSLeay (+LWP) is required";
         }
 
 }
@@ -62,7 +64,7 @@ Business::OnlinePayment::HTTPS - Base class for HTTPS payment APIs
           #or a hashref
           my %hash = ( field => 'value', ... );
           ($page, $response_code, %reply_headers)
-            = $self->https_get( $hashref );
+            = $self->https_get( \%hash );
 
           #...
   }
@@ -192,8 +194,7 @@ sub https_post {
 
   if ( $ssl_module eq 'Net::SSLeay' ) {
 
-    #import Net::SSLeay qw(post_https make_headers make_form);
-    import Net::SSLeay qw(make_headers make_form);
+    import Net::SSLeay qw(post_https make_headers make_form);
     my $headers = make_headers(%headers);
 
     if ( $DEBUG ) {
@@ -204,8 +205,8 @@ sub https_post {
     #            $headers, make_form(%$post_data)  );
 
     my $raw_data = ref($post_data) ? make_form(%$post_data) : $post_data;
-    _my_post_https( $self->server, $self->port, $self->path,
-                    $headers, $raw_data );
+    post_https( $self->server, $self->port, $self->path,
+                $headers, $raw_data );
 
   } elsif ( $ssl_module eq 'Crypt::SSLeay' ) {
 
@@ -244,61 +245,6 @@ sub https_post {
 
   }
 
-}
-
-# SecureHostingUPG (and presumably other IIS-based gateways?) doesn't like the
-# Host: $site:$port header auto-added by Net::SSLeay, which it adds regardless
-# if you supply one or not
-
-sub _my_post_https ($$$;***) { _my_do_httpx2(POST => 1, @_) }
-
-sub _my_do_httpx2 {
-    my ($page, $response, $headers, $server_cert) = &_my_do_httpx3;
-    Net::SSLeay::X509_free($server_cert) if defined $server_cert;
-    my($h,$v);
-    return ($page, $response,
-	    map( { ($h,$v)=/^(\S+)\:\s*(.*)$/; (uc($h),$v); }
-		split(/\s?\n/, $headers)
-		)
-	    );
-}
-
-sub _my_do_httpx3 {
-    my ($method, $usessl, $site, $port, $path, $headers,
-	$content, $mime_type, $crt_path, $key_path) = @_;
-    my ($response, $page, $h,$v);
-
-    my $CRLF = $Net::SSLeay::CRLF;
-
-    if ($content) {
-	$mime_type = "application/x-www-form-urlencoded" unless $mime_type;
-	my $len = Net::SSLeay::blength($content);
-	$content = "Content-Type: $mime_type$CRLF"
-	    . "Content-Length: $len$CRLF$CRLF$content";
-    } else {
-	$content = "$CRLF$CRLF";
-    }
-
-    my $req = "$method $path HTTP/1.0$CRLF";
-    unless ( defined $headers && $headers =~ /^Host:/m ) {
-      $req .= "Host: $site";
-      unless ( ( $port==80 && !$usessl ) || ( $port==443 && $usessl ) ) {
-        $req .= ":$port";
-      }
-      $req .= $CRLF;
-    }
-    $req .= (defined $headers ? $headers : '') . "Accept: */*$CRLF$content";    
-
-    warn "do_httpx3($method,$usessl,$site:$port)" if $Net::SSLeay::trace;
-    my ($http, $errs, $server_cert)
-	= Net::SSLeay::httpx_cat($usessl, $site, $port, $req, $crt_path, $key_path);
-    return (undef, "HTTP/1.0 900 NET OR SSL ERROR$CRLF$CRLF$errs") if $errs;
-    
-    $http = '' if !defined $http;
-    ($headers, $page) = split /\s?\n\s?\n/, $http, 2;
-    warn "headers >$headers< page >>$page<< http >>>$http<<<" if $Net::SSLeay::trace>1;
-    ($response, $headers) = split /\s?\n/, $headers, 2;
-    return ($page, $response, $headers, $server_cert);
 }
 
 =back

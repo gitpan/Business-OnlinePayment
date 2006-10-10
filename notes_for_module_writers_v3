@@ -1,0 +1,41 @@
+These are the module writer's notes for v3.  See the regular
+"notes_for_module_writers" file first.
+
+
+- If your gateway is HTTPS-based, use (or convert to)
+  Business::OnlinePayment::HTTPS !!
+
+    - Business::OnlinePayment::OpenECHO is the first "v3-ish" module, try
+      starting from there.
+
+
+- Handling failures:
+
+    - If your processor module encounters a setup problem, communication
+      error or other problem that's prevents the card from even being
+      run, you should die (or croak) with a useful error message.  Setting
+      is_success to 0 and returning normally should only be done when the
+      transaction *processing* was sucessful (or at least elicited some sort
+      of result from the gateway), but the transaction itself returned a
+      "normal" decline status of some sort.
+      
+    - (NEW IN 3.00_04) You should set "failure_status" depending on the
+      specific failure result, if (and only if) the failure results from one
+      of the defined statuses:
+
+      - "expired"
+      - "nsf" (non-sufficient funds / credit limit)
+      - "stolen"
+      - "pickup"
+      - "blacklisted"
+      - "inactive" (inactive card or not authorized for card-not-present) (?)
+      - "decline" (other card/transaction declines only, not other errors)
+  
+      You should use code like this so your module can work with B:OP versions
+      before 3.00_04:
+
+        $self->build_subs('failure_status') unless $self->can('failure_status');
+
+      (or add "failure_status" to your build_subs call if you have one during
+      initialization)
+      

@@ -1,5 +1,34 @@
 Revision history for Perl extension Business::OnlinePayment.
 
+3.00_04  Tue Oct 10 12:49:43 PDT 2006
+	- failure statues (see notes_for_module_writers_v3)
+	- oops, forgot _03 changelog in _03
+	- B:OP:HTTPS: require Net::SSLeay 1.30 and remove _my_https_post kludge
+	- eliminate warnings about redefined subroutines
+	- Business::FraudDetect and Business::FraudDetect::preCharge included
+	- From Phil Lobbes:
+	  - content() now returns empty hash if no content is defined
+	  - build_subs now uses can() so it doesn't redefine subs (and generate
+	    warnings)
+	  - DOC: SYNOPSIS now uses correct "card_number" and not "cardnumber"
+	  - created test cases for (all?) methods except _risk_detect
+	    _pre_submit 
+	  - Removed some old commented out 2.x statements
+	  - set $VERSION using eval per modperlstyle
+	  - new() now will strip off multiple leading dashes before calling
+	    build_subs
+	    NOTE: we should probably have it remove any \W to make perl happy
+	  - required_fields() now croaks with a list of missing fields
+	  - Lots of general cleanup, no functional changes. "fill
+	    paragraphs" in POD, remove extra whitespace, sorted %fields,
+	    dump_contents now sorts %contents, added myself to AUTHORS.
+	- From Frederic Briere (closes: CPAN#21082):
+	  - DOC: s/exp_date/expiration/ 
+
+3.00_03  Wed Mar 16 02:41:59 PST 2005
+	- https_post now accepts a scalar of raw content instead of key value
+	  pairs
+
 3.00_02  Mon Jan 10 21:36:53 PST 2005
 	- HTTPS base class now has https_post in addition to https_get
 

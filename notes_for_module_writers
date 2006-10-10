@@ -1,13 +1,19 @@
-These are the old v2 notes.  Business::OnlinePayment::OpenECHO is the first
-"v3-ish" module, if you're writing an HTTPS-interface module, try starting
-from there until there's better v3 module writer's docs.
-
-$Id: notes_for_module_writers,v 1.2 2004/09/03 23:20:25 ivan Exp $
-
 Information on creating a new processor backend to go with
 Business::OnlinePayment.
+-----------------------------------------------------------
 
-create a subclass of Business::OnlinePayment called
+NOTE: 
+
+    These are the old v2 notes.  
+
+    If you're writing a new module, see these first and then read
+    notes_for_module_writers_v3
+
+    If you're updating an existing module for v3, go directly to
+    notes_for_module_writers_v3
+
+
+Create a subclass of Business::OnlinePayment called
 Business::OnlinePayment::(processor name).  You should override at least
 the following functions (look at Business::OnlinePayment::AuthorizeNet as
 an example).
