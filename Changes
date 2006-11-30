@@ -1,5 +1,38 @@
 Revision history for Perl extension Business::OnlinePayment.
 
+3.00_05  unreleased
+	- Update Makefile.PL so Business::FraudDetect::preCharge is installed,
+	  included by make dist, etc.
+	- Phil Lobbes is responsible for the rest of the work in this release.
+	  Thanks!
+	  - Reworked _pre_submit functionality:
+	    - Add Class data %WrappedSubmitClassMethod to remember "wrapped"
+	      submit 
+            - Fix new() to check %WrappedSubmitClassMethod to avoid creating
+	      deep recursion 
+            - Used feedback from MSCHWERN / Bug #22074 to cleanup
+	      new/_pre_submit more
+            - Now always wrap submit() method with _pre_submit() (but only
+	      once)
+	    - no longer populate _child_submit, code in anon sub was cleaned
+	      up
+	    - use return values from _pre_submit to determine if real submit
+	      is called.  the return values from _pre_submit should be
+	      reviewed/verified still
+	    - _risk_detect(): explicity set return value
+            - _pre_submit(): explicity set return value
+	  - Updated tests:
+	    - 8 new tests and 1 new "MOCK3" driver for testing _pre_submit()
+	      functionality
+            - test for new() replacing subclass submit and causing deep
+	      recursion
+	    - minor cleanup of test drivers
+	    - fix "submit unchanged" test case: now wrapped with _pre_submit()
+	      always
+	  - Updated POD documentation:
+            - Minor documentation change in print statements use ',' instead
+	      of '.'         
+
 3.00_04  Tue Oct 10 12:49:43 PDT 2006
 	- failure statues (see notes_for_module_writers_v3)
 	- oops, forgot _03 changelog in _03

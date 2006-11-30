@@ -3,12 +3,14 @@ package Business::OnlinePayment;
 use strict;
 use vars qw($VERSION);
 use Carp;
-use Symbol;
 
 require 5.005;
 
-$VERSION = '3.00_04';
+$VERSION = '3.00_05';
 $VERSION = eval $VERSION; # modperlstyle: convert the string into a number
+
+# Remember subclasses we have "wrapped" submit() with _pre_submit()
+my %Presubmit_Added = ();
 
 my %fields = (
     authorization    => undef,
@@ -26,7 +28,6 @@ my %fields = (
     test_transaction => undef,
     transaction_type => undef,
 );
-
 
 sub new {
     my($class,$processor,%data) = @_;
@@ -54,16 +55,18 @@ sub new {
         $self->$key($value);
     }
 
-    unless ( $subclass->can('submit') eq $class->can('submit') ) {
-        no strict 'refs';
-        no warnings 'redefine';
-        my $submit = qualify_to_ref('submit', $subclass);
+    # "wrap" submit with _pre_submit only once
+    unless ( $Presubmit_Added{$subclass} ) {
+        my $real_submit = $subclass->can('submit');
 
-        $self->{_child_submit} = \&$submit;
-        *{"${subclass}::submit"} = sub {
-            my $self = shift;
-            $self->_pre_submit();
-        }
+	no warnings 'redefine';
+	no strict 'refs';
+
+	*{"${subclass}::submit"} = sub {
+	    my $self = shift;
+	    return unless $self->_pre_submit(@_);
+	    return $real_submit->($self, @_);
+	}
     }
 
     return $self;
@@ -78,33 +81,34 @@ sub _risk_detect {
     $risk_transaction->submit();
     if ($risk_transaction->is_success()) {
 	if ( $risk_transaction->fraud_score <= $self->maximum_fraud_score()) {
-	    $self->{_child_submit}->($self);
+	    return 1;
 	} else {
-	    $self->is_success(0);
 	    $self->error_message('Excessive risk from risk management');
 	}
     } else {
 	$self->error_message('Error in risk detection stage: ' .  $risk_transaction->error_message);
-	$self->is_success(0);
     }
+    $self->is_success(0);
+    return 0;
 }
 
-sub _pre_submit{
+my @Fraud_Class_Path = qw(Business::OnlinePayment Business::FraudDetect);
+
+sub _pre_submit {
     my ($self) = @_;
     my $fraud_detection = $self->fraud_detect();
 
     # early return if user does not want optional risk mgt
-    return $self->{_child_submit}->($self,@_) unless $fraud_detection && length $fraud_detection;
+    return 1 unless $fraud_detection;
 
     # Search for an appropriate FD module
-    foreach my $subclass ( q(Business::OnlinePayment::) . $fraud_detection,
-			   q(Business::FraudDetect::) . $fraud_detection) {
-
+    foreach my $fraud_class ( @Fraud_Class_Path ) {
+	my $subclass = $fraud_class . "::" . $fraud_detection;
 	if (!defined(&$subclass)) {
-	    eval "use $subclass";
+	    eval "use $subclass ()";
 	    if ($@) {
-		Carp::croak("serious problem loading fraud_detection module ($@)") unless
-		    $@ =~ m/^Can\'t locate/;
+		Carp::croak("error loading fraud_detection module ($@)")
+		      unless ( $@ =~ m/^Can\'t locate/ );
 	    } else {
 		my $risk_tx = bless ( { processor => $fraud_detection } , $subclass );
 		$risk_tx->build_subs(keys %fields);
@@ -116,7 +120,10 @@ sub _pre_submit{
 	    }
 	}
     }
-};
+    Carp::croak("Unable to locate fraud_detection module $fraud_detection"
+		. " in \@INC under Fraud_Class_Path (\@Fraud_Class_Path"
+	        . " contains: @Fraud_Class_Path) (\@INC contains: @INC)");
+}
 
 sub content {
     my($self,%params) = @_;
@@ -213,9 +220,9 @@ Business::OnlinePayment - Perl extension for online payment processing
   $transaction->submit();
   
   if($transaction->is_success()) {
-    print "Card processed successfully: ".$transaction->authorization()."\n";
+    print "Card processed successfully: ", $transaction->authorization(), "\n";
   } else {
-    print "Card was rejected: ".$transaction->error_message()."\n";
+    print "Card was rejected: ", $transaction->error_message(), "\n";
   }
 
 =head1 DESCRIPTION

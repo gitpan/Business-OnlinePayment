@@ -1,9 +1,8 @@
 #!/usr/bin/perl
-# $Id: bop.t,v 1.6 2006/08/31 19:49:55 plobbes Exp $
 
 use strict;
 use warnings;
-use Test::More tests => 54;
+use Test::More tests => 62;
 
 BEGIN { use_ok("Business::OnlinePayment") or exit; }
 
@@ -15,17 +14,22 @@ BEGIN { use_ok("Business::OnlinePayment") or exit; }
     use base qw(Business::OnlinePayment);
 }
 
-{    # fake test driver 2 (with submit method)
+{    # fake test driver 2 (with submit method that dies)
 
     package Business::OnlinePayment::MOCK2;
-    use strict;
-    use warnings;
-    use base qw(Business::OnlinePayment);
-    sub submit { die("in processor submit\n"); }
+    use base qw(Business::OnlinePayment::MOCK1);
+    sub submit { my $self = shift; die("in processor submit\n"); }
+}
+
+{    # fake test driver 3 (with submit method)
+
+    package Business::OnlinePayment::MOCK3;
+    use base qw(Business::OnlinePayment::MOCK1);
+    sub submit { my $self = shift; return 1; }
 }
 
 my $package = "Business::OnlinePayment";
-my @drivers = qw(MOCK1 MOCK2);
+my @drivers = qw(MOCK1 MOCK2 MOCK3);
 my $driver  = $drivers[0];
 
 # trick to make use() happy (called in Business::OnlinePayment->new)
@@ -87,7 +91,39 @@ foreach my $drv (@drivers) {
 
 # XXX
 # {    # _risk_detect }
-# {    # _pre_submit }
+
+{    # _pre_submit
+
+    my $s_orig = Business::OnlinePayment::MOCK3->can("submit");
+    is( ref $s_orig, "CODE", "MOCK3 submit code ref $s_orig" );
+
+    # test to ensure we do not go recursive when wrapping submit
+    my $obj1   = $package->new("MOCK3");
+    my $s_new1 = $obj1->can("submit");
+
+    isnt( $s_new1, $s_orig, "MOCK3 submit code ref $s_new1 (wrapped)" );
+    is( $obj1->submit, "1", "MOCK3(obj1) submit returns 1" );
+
+    my $obj2   = $package->new("MOCK3");
+    my $s_new2 = $obj2->can("submit");
+    is( $obj2->submit, "1", "MOCK3(obj2) submit returns 1" );
+
+    # fraud detection failure modes
+    my $obj   = $package->new("MOCK3");
+    my $bogus = "__BOGUS_PROCESSOR";
+    my $valid = "preCharge";
+
+    is( $obj->fraud_detect($bogus), $bogus, "fraud_detect set to '$bogus'" );
+    eval { $obj->submit; };
+    like( $@, qr/^Unable to locate fraud_detection /,
+          "fraud_detect with unknown processor croaks" );
+
+    is( $obj->fraud_detect($valid), $valid, "fraud_detect set to '$valid'" );
+    eval { $obj->submit; };
+    like( $@, qr/^missing required /, "fraud_detect($valid) missing fields" );
+
+    # XXX: more test cases for preCharge needed
+}
 
 {    # content
     my $obj;
@@ -115,7 +151,7 @@ foreach my $drv (@drivers) {
     is( $obj->required_fields, 0, "no required fields" );
 
     eval { $obj->required_fields("field1"); };
-    like( $@, qr/^missing required field/, "missing required_fields() croaks" );
+    like( $@, qr/^missing required field/, "missing required_fields croaks" );
 }
 
 {    # get_fields
@@ -162,7 +198,7 @@ foreach my $drv (@drivers) {
 
     eval { $obj->submit; };
     like( $@, qr/^Processor subclass did not /, "missing submit() croaks" );
-    is( $obj->can("submit"), $package->can("submit"), "submit unchanged" );
+    isnt( $obj->can("submit"), $package->can("submit"), "submit changed" );
 
     my $mock2 = $package->new("MOCK2");
     can_ok( $mock2, qw(submit) );

@@ -5,6 +5,7 @@ WriteMakefile(
     'NAME'         => 'Business::OnlinePayment',
     'VERSION_FROM' => 'OnlinePayment.pm', # finds $VERSION
     'AUTHOR'       => 'Ivan Kohler <ivan-business-onlinepayment@420.am>',
+    'PMLIBDIRS'    => [ 'OnlinePayment', 'FraudDetect' ],
     'NORECURS'     => 1, # dont descend into subdirectories
     'PREREQ_PM'    => { 
                         # for HTTPS (maybe it should be a separate dist?)
