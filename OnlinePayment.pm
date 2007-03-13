@@ -6,7 +6,7 @@ use Carp;
 
 require 5.005;
 
-$VERSION = '3.00_05';
+$VERSION = '3.00_06';
 $VERSION = eval $VERSION; # modperlstyle: convert the string into a number
 
 # Remember subclasses we have "wrapped" submit() with _pre_submit()
@@ -44,7 +44,7 @@ sub new {
     $self->build_subs(keys %fields);
 
     if($self->can("set_defaults")) {
-        $self->set_defaults();
+        $self->set_defaults(%data);
     }
 
     foreach(keys %data) {
@@ -250,13 +250,9 @@ little depending on the processor, so we have chosen to use a system
 which defines specific fields in the frontend which get mapped to the
 correct fields in the backend.  The currently defined fields are:
 
+=head3 PROCESSOR FIELDS
+
 =over 4
-
-=item * type
-
-Transaction type, supported types are:
-Visa, MasterCard, American Express, Discover, Check (not all
-processors support all these transaction types).
 
 =item * login
 
@@ -265,6 +261,19 @@ Your login name to use for authentication to the online processor.
 =item * password
 
 Your password to use for authentication to the online processor.
+
+=back
+
+=head3 GENERAL TRANSACTION FIELDS
+
+=over 4
+
+=item * type
+
+Transaction type, supported types are: CC (credit card), ECHECK
+(electronic check) and LEC (phone bill billing).  Deprecated types
+are: Visa, MasterCard, American Express, Discover, Check (not all
+processors support all these transaction types).
 
 =item * action
 
@@ -286,37 +295,73 @@ and the like, just a floating point number.
 An invoice number, for your use and not normally required, many
 processors require this field to be a numeric only field.
 
+=back
+
+=head3 CUSTOMER INFO FIELDS
+
+=over 4
+
 =item * customer_id
 
 A customer identifier, again not normally required.
 
 =item * name
 
-The customers name, your processor may not require this.
+The customer's name, your processor may not require this.
+
+=item * first_name
+
+=item * last_name
+
+The customer's first and last name as separate fields.
+
+=item * company
+
+The customer's company name, not normally required.
 
 =item * address
 
-The customers address (your processor may not require this unless you
+The customer's address (your processor may not require this unless you
 are requiring AVS Verification).
 
 =item * city
 
-The customers city (your processor may not require this unless you are
-requiring AVS Verification).
+The customer's city (your processor may not require this unless you
+are requiring AVS Verification).
 
 =item * state
 
-The customers state (your processor may not require this unless you
+The customer's state (your processor may not require this unless you
 are requiring AVS Verification).
 
 =item * zip
 
-The customers zip code (your processor may not require this unless you
-are requiring AVS Verification).
+The customer's zip code (your processor may not require this unless
+you are requiring AVS Verification).
 
 =item * country
 
 Customer's country.
+
+=item * ship_first_name
+
+=item * ship_last_name
+
+=item * ship_company
+
+=item * ship_address
+
+=item * ship_city
+
+=item * ship_state
+
+=item * ship_zip
+
+=item * ship_country
+
+These shipping address fields may be accepted by your processor.
+Refer to the description for the corresponding non-ship field for
+general information on each field.
 
 =item * phone
 
@@ -330,27 +375,86 @@ Customer's fax number.
 
 Customer's email address.
 
+=item * customer_ip
+
+IP Address from which the transaction originated.
+
+=back
+
+=head3 CREDIT CARD FIELDS
+
+=over 4
+
 =item * card_number
 
 Credit card number (obviously not required for non-credit card
 transactions).
+
+=item * cvv2
+
+CVV2 number (also called CVC2 or CID) is a three- or four-digit
+security code used to reduce credit card fraud.
 
 =item * expiration
 
 Credit card expiration (obviously not required for non-credit card
 transactions).
 
+=item * recurring billing
+
+Recurring billing flag
+
+=back
+
+=head3 ELECTRONIC CHECK FIELDS
+
+=over 4
+
 =item * account_number
 
-Bank account number for electronic checks or electronic funds transfer.
+Bank account number for electronic checks or electronic funds
+transfer.
 
 =item * routing_code
 
-Bank's routing code for electronic checks or electronic funds transfer.
+Bank's routing code for electronic checks or electronic funds
+transfer.
+
+=item * account_type
+
+Account type for electronic checks or electronic funds transfer.
+
+=item * account_name
+
+Account holder's name for electronic checks or electronic funds
+transfer.
 
 =item * bank_name
 
 Bank's name for electronic checks or electronic funds transfer.
+
+=item * check_type
+
+Check type for electronic checks or electronic funds transfer.
+
+=item * customer_org
+
+Customer organization type.
+
+=item * customer_ssn
+
+Customer's social security number.  Typically only required for
+electronic checks or electronic funds transfer.
+
+=item * license_num
+
+Customer's driver's license number.  Typically only required for
+electronic checks or electronic funds transfer.
+
+=item * license_dob
+
+Customer's date of birth.  Typically only required for electronic
+checks or electronic funds transfer.
 
 =back
 
@@ -365,11 +469,11 @@ it failed (or undef if it has not been submitted yet).
 
 =head2 failure_status();
 
-If the transaction failed, it can optionally return a specific
-failure status (normalized, not gateway-specific).  Currently defined
-statuses are: "expired", "nsf" (non-sufficient funds), "stolen",
-"pickup", "blacklisted" and "declined" (card/transaction declines
-only, not other errors).
+If the transaction failed, it can optionally return a specific failure
+status (normalized, not gateway-specific).  Currently defined statuses
+are: "expired", "nsf" (non-sufficient funds), "stolen", "pickup",
+"blacklisted" and "declined" (card/transaction declines only, not
+other errors).
 
 Note that (as of Aug 2006) this is only supported by some of the
 newest processor modules, and that, even if supported, a failure
@@ -398,7 +502,7 @@ verification (if the processor supports it).
 
 =head2 transaction_type();
 
-Retrieve the transaction type (the 'type' argument to contents();).
+Retrieve the transaction type (the 'type' argument to contents()).
 Generally only used internally, but provided in case it is useful.
 
 =head2 error_message();
@@ -419,11 +523,13 @@ YOUR OWN RISK).
 
 =head2 port();
 
-Retrieve or change the processor submission port (CHANGE AT YOUR OWN RISK).
+Retrieve or change the processor submission port (CHANGE AT YOUR OWN
+RISK).
 
 =head2 path();
 
-Retrieve or change the processor submission path (CHANGE AT YOUR OWN RISK).
+Retrieve or change the processor submission path (CHANGE AT YOUR OWN
+RISK).
 
 =head1 AUTHORS
 
@@ -432,6 +538,11 @@ Jason Kohles, email@jasonkohles.com
 (v3 rewrite) Ivan Kohler <ivan-business-onlinepayment@420.am>
 
 Phil Lobbes E<lt>phil at perkpartners dot comE<gt>
+
+=head1 MAILING LIST
+
+Please direct current development questions, patches, etc. to the mailing list:
+http://420.am/cgi-bin/mailman/listinfo/bop-devel/
 
 =head1 DISCLAIMER
 

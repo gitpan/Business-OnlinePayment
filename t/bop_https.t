@@ -1,9 +1,13 @@
-# test 1
-BEGIN { $| = 1; print "1..1\n"; }
-END {print "not ok 1\n" unless $loaded;}
+#!/usr/bin/perl
 
-use Business::OnlinePayment::HTTPS;
-$loaded = 1;
-print "ok 1\n";
+use strict;
+use warnings;
+use Test::More;
 
+my $package = "Business::OnlinePayment::HTTPS";
+eval "use $package;";
 
+# HTTPS support is optional
+plan( $@ ? ( skip_all => "$package: $@\n" ) : ( tests => 1 ) );
+
+can_ok( $package, qw(https_get https_post) );

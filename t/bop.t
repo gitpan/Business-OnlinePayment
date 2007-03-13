@@ -2,9 +2,9 @@
 
 use strict;
 use warnings;
-use Test::More tests => 62;
+use Test::More tests => 57;
 
-BEGIN { use_ok("Business::OnlinePayment") or exit; }
+use Business::OnlinePayment;
 
 {    # fake test driver 1 (no submit method)
 
@@ -107,22 +107,6 @@ foreach my $drv (@drivers) {
     my $obj2   = $package->new("MOCK3");
     my $s_new2 = $obj2->can("submit");
     is( $obj2->submit, "1", "MOCK3(obj2) submit returns 1" );
-
-    # fraud detection failure modes
-    my $obj   = $package->new("MOCK3");
-    my $bogus = "__BOGUS_PROCESSOR";
-    my $valid = "preCharge";
-
-    is( $obj->fraud_detect($bogus), $bogus, "fraud_detect set to '$bogus'" );
-    eval { $obj->submit; };
-    like( $@, qr/^Unable to locate fraud_detection /,
-          "fraud_detect with unknown processor croaks" );
-
-    is( $obj->fraud_detect($valid), $valid, "fraud_detect set to '$valid'" );
-    eval { $obj->submit; };
-    like( $@, qr/^missing required /, "fraud_detect($valid) missing fields" );
-
-    # XXX: more test cases for preCharge needed
 }
 
 {    # content
