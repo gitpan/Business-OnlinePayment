@@ -1,5 +1,8 @@
 Revision history for Perl extension Business::OnlinePayment.
 
+3.00_07  Fri Mar 23 14:54:57 PDT 2007
+	- B:OP:HTTPS request headers now work with Crypt::SSLeay too.
+
 3.00_06  Tue Mar 13 12:26:04 PDT 2007
 	- B:OP:HTTPS: add optional \%options (options hashref) to
 	  https_get and https_post to allow modules using this to set

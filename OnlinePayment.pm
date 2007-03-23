@@ -6,7 +6,7 @@ use Carp;
 
 require 5.005;
 
-$VERSION = '3.00_06';
+$VERSION = '3.00_07';
 $VERSION = eval $VERSION; # modperlstyle: convert the string into a number
 
 # Remember subclasses we have "wrapped" submit() with _pre_submit()

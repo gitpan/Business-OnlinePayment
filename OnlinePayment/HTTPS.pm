@@ -6,7 +6,7 @@ use URI::Escape;
 use Tie::IxHash;
 use base qw(Business::OnlinePayment);
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 $DEBUG   = 0;
 
 BEGIN {
@@ -155,7 +155,10 @@ sub https_get {
           unless $self->port == 443;
         $url .= "/$path";
 
-        my $ua  = new LWP::UserAgent;
+        my $ua = new LWP::UserAgent;
+        foreach my $hdr ( keys %headers ) {
+            $ua->default_header( $hdr => $headers{$hdr} );
+        }
         my $res = $ua->request( GET($url) );
 
         (
@@ -258,6 +261,9 @@ sub https_post {
         }
 
         my $ua = new LWP::UserAgent;
+        foreach my $hdr ( keys %headers ) {
+            $ua->default_header( $hdr => $headers{$hdr} );
+        }
 
         my $res;
         if ( ref($post_data) ) {
