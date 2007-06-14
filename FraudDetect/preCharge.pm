@@ -1,15 +1,13 @@
-
 package Business::FraudDetect::preCharge;
 
 use strict;
 use Carp;
 use vars qw($VERSION @ISA);
-#use Data::Dumper;
-
 use Business::OnlinePayment::HTTPS;
-@ISA = qw / Business::OnlinePayment::HTTPS /;
 
-$VERSION = '0.01';
+@ISA = qw( Business::OnlinePayment::HTTPS );
+
+$VERSION = '0.02';
 
 sub _glean_parameters_from_parent {
     my ($self, $parent) = @_;
@@ -24,7 +22,7 @@ sub set_defaults {
     $self->port(443);
     $self->path('/charge');
     $self->build_subs(qw /currency fraud_score error_code
-		      precharge_id precharge_security1 precharge_security2 force_success / );
+		      precharge_id precharge_security1 precharge_security2 force_success fraud_transaction_id / );
     $self->currency('USD');
     return $self;
 }
@@ -47,21 +45,28 @@ sub submit {
 			      ip_address
 			      ));
 
-    $self->remap_fields( qw /
-			 ip_address		ecom_billto_online_ip 
-			 zip			ecom_billto_postal_code 
-			 phone			ecom_billto_telecom_phone_number 
-			 first_name		ecom_billto_postal_name_first
-			 last_name		ecom_billto_postal_name_last
-			 email			ecom_billto_online_email 
-			 amount			ecom_transaction_amount  /
-			 );
+    $self->remap_fields( qw/
+                            ip_address         ecom_billto_online_ip 
+                            zip                ecom_billto_postal_postalcode 
+                            phone              ecom_billto_telecom_phone_number 
+                            first_name         ecom_billto_postal_name_first
+                            last_name          ecom_billto_postal_name_last
+                            email              ecom_billto_online_email 
+                            country            ecom_billto_postal_countrycode
+                            card_number        ecom_payment_card_number
+                            amount             ecom_transaction_amount
+                           /
+                       );
 
 
-    my %post_data = $self->get_fields(qw ( ecom_billto_online_ip ecom_billto_postal_code
-					   ecom_billto_telecom_phone_number ecom_billto_online_email
-					   ecom_transaction_amount currency
-					   ));
+    my %post_data = $self->get_fields(qw(
+      ecom_billto_online_ip ecom_billto_postal_postalcode
+      ecom_billto_telecom_phone_number ecom_billto_online_email
+      ecom_transaction_amount currency
+      ecom_billto_postal_name_first ecom_billto_postal_name_last
+      ecom_billto_postal_countrycode
+      ecom_payment_card_number
+    ));
 
     # set up some reasonable defaults
 
@@ -69,16 +74,20 @@ sub submit {
     # split out MM/YY from exp date
     #
 
-    @post_data{qw/ecom_payment_card_expdate_month ecom_payment_card_expdate_year/} = $content{expiration} =~ m/(\d{1,2})(\d{2})/;
-    @post_data{qw/merchant_id security_1 security_2/} = ($self->precharge_id,
-							 $self->precharge_security1,
-							 $self->precharge_security2);
+    @post_data{ qw/ ecom_payment_card_expdate_month
+                    ecom_payment_card_expdate_year
+                  /
+              } = split(/\//,$content{expiration});
+
+    @post_data{qw/merchant_id security_1 security_2/} = (
+      $self->precharge_id,
+      $self->precharge_security1,
+      $self->precharge_security2
+    );
 
     if ($self->test_transaction()) {
 	$post_data{test} = 1;
     }
-
-#    warn Dumper \%post_data;
     my ($page, $response, %headers) = $self->https_post(\%post_data);
 
     $self->server_response($page);
@@ -132,22 +141,24 @@ sub submit {
     }
 
     if ($output{response} == 1 )  {
-	$self->is_success(1);
-	$self->fraud_score($output{score});
-	$self->result_code($output{response});
-	$self->error_message('No Error.  Risk assesment transaction successful');
+        $self->is_success(1);
+        $self->fraud_score($output{score});
+        $self->result_code($output{response});
+        $self->fraud_transaction_id($output{transaction});
+        $self->error_message('No Error.  Risk assesment transaction successful');
     } else {
-	$self->is_success(0);
-	$self->result_code($output{error});
-	$self->error_message(exists $error_map{$output{error}} ? $error_map{$output{error}} :  "preCharge error $output{error} occurred.");
+        $self->is_success(0);
+        $self->fraud_score($output{score});
+        $self->result_code($output{error});
+        $self->error_message( exists( $error_map{$output{error}} )
+                                ? $error_map{$output{error}}
+                                :  "preCharge error $output{error} occurred."
+                            );
     }
 }
 
 
-
-
 1;
-
 
 
 =pod
@@ -160,7 +171,7 @@ Business::FraudDetect::preCharge - backend for Business::FraudDetect (part of Bu
 
  use Business::OnlinePayment
  my $tx = new Business::OnlinePayment ( 'someGateway',
-                                        fruad_detection => 'preCharge',
+                                        fraud_detect => 'preCharge',
                                         maximum_fraud_score => 500,
                                         preCharge_id => '1000000000000001',
                                         preCharge_security1 => 'abcdef0123',
@@ -186,8 +197,12 @@ Business::FraudDetect::preCharge - backend for Business::FraudDetect (part of Bu
  $tx->submit();
  if ($tx->is_success()) {
     # successful charge
+    my $score = $tx->fraud_score;
+    my $id = $tx->fraud_transaction_id;
+       #returns the preCharge transaction id
  } else {
     # unsucessful 
+    my $score = $tx->fraud_score;
  }
 
 =head1 DESCRIPTION
@@ -226,6 +241,8 @@ This module provides no public methods.
 =head1 AUTHORS
 
 Lawrence Statton <lawrence@cluon.com>
+
+Jason Hall <jayce@lug-nut.com>
 
 =head1 DISCLAIMER
 

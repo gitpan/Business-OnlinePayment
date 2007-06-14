@@ -70,7 +70,10 @@ submit method to interpose an additional Fraud Detection phase.
 
 =head1 AUTHORS
 
-Lawrence Statton <lawrence@cluon.com>
+Original author: Lawrence Statton <lawrence@cluon.com>
+
+Current maintainer: Ivan Kohler <ivan-bop@420.am> as part of the
+Business::OnlinePayment distribution.
 
 =head1 DISCLAIMER
 
@@ -78,6 +81,7 @@ THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES,
 
 =head1 SEE ALSO
 
-http://420.am/business-onlinepayment
+L<Business::OnlinePayment>, http://420.am/business-onlinepayment
+
 
 =cut

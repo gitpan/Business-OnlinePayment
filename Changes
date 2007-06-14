@@ -1,5 +1,14 @@
 Revision history for Perl extension Business::OnlinePayment.
 
+3.00_08  unreleased
+        - B:OP:HTTPS: set response_page, response_code, response_headers
+        - B:OP:HTTPS: Normalize https_post (and debugging) response_code to
+          "NNN message" even when using LWP/Crypt::SSLeay.
+        - B:OP: defined &$class is not how you detect if a class has been loaded
+          (just using use should be fine).  Closes: CPAN#22071
+        - Enable retrieval of fraud transaction score and transaction ID,
+          B:OP and B:FD:preCharge patch from Jason Hall, thanks!
+
 3.00_07  Fri Mar 23 14:54:57 PDT 2007
 	- B:OP:HTTPS request headers now work with Crypt::SSLeay too.
 

@@ -6,39 +6,39 @@ use Carp;
 
 require 5.005;
 
-$VERSION = '3.00_07';
+$VERSION = '3.00_08';
 $VERSION = eval $VERSION; # modperlstyle: convert the string into a number
 
 # Remember subclasses we have "wrapped" submit() with _pre_submit()
 my %Presubmit_Added = ();
 
 my %fields = (
-    authorization    => undef,
-    error_message    => undef,
-    failure_status   => undef,
-    fraud_detect     => undef,
-    is_success       => undef,
-    maximum_risk     => undef,
-    path             => undef,
-    port             => undef,
-    require_avs      => undef,
-    result_code      => undef,
-    server           => undef,
-    server_response  => undef,
-    test_transaction => undef,
-    transaction_type => undef,
+    authorization        => undef,
+    error_message        => undef,
+    failure_status       => undef,
+    fraud_detect         => undef,
+    is_success           => undef,
+    maximum_risk         => undef,
+    path                 => undef,
+    port                 => undef,
+    require_avs          => undef,
+    result_code          => undef,
+    server               => undef,
+    server_response      => undef,
+    test_transaction     => undef,
+    transaction_type     => undef,
+    fraud_score          => undef,
+    fraud_transaction_id => undef,
 );
 
 sub new {
     my($class,$processor,%data) = @_;
 
-    Carp::croak("unspecified processor") unless $processor;
+    croak("unspecified processor") unless $processor;
 
     my $subclass = "${class}::$processor";
-    if(!defined(&$subclass)) {
-        eval "use $subclass";
-        Carp::croak("unknown processor $processor ($@)") if $@;
-    }
+    eval "use $subclass";
+    croak("unknown processor $processor ($@)") if $@;
 
     my $self = bless {processor => $processor}, $subclass;
     $self->build_subs(keys %fields);
@@ -80,6 +80,8 @@ sub _risk_detect {
     $risk_transaction->content( %parent_content );
     $risk_transaction->submit();
     if ($risk_transaction->is_success()) {
+         $self->fraud_score( $risk_transaction->fraud_score );
+         $self->fraud_transaction_id( $risk_transaction->fraud_transaction_id );
 	if ( $risk_transaction->fraud_score <= $self->maximum_fraud_score()) {
 	    return 1;
 	} else {
@@ -104,23 +106,21 @@ sub _pre_submit {
     # Search for an appropriate FD module
     foreach my $fraud_class ( @Fraud_Class_Path ) {
 	my $subclass = $fraud_class . "::" . $fraud_detection;
-	if (!defined(&$subclass)) {
-	    eval "use $subclass ()";
-	    if ($@) {
-		Carp::croak("error loading fraud_detection module ($@)")
-		      unless ( $@ =~ m/^Can\'t locate/ );
-	    } else {
-		my $risk_tx = bless ( { processor => $fraud_detection } , $subclass );
-		$risk_tx->build_subs(keys %fields);
-		if ($risk_tx->can('set_defaults')) {
-		    $risk_tx->set_defaults();
-		}
-		$risk_tx->_glean_parameters_from_parent($self);
-		return $self->_risk_detect($risk_tx);
-	    }
+	eval "use $subclass ()";
+	if ($@) {
+	    croak("error loading fraud_detection module ($@)")
+              unless ( $@ =~ m/^Can\'t locate/ );
+        } else {
+            my $risk_tx = bless( { processor => $fraud_detection }, $subclass );
+            $risk_tx->build_subs(keys %fields);
+            if ($risk_tx->can('set_defaults')) {
+                $risk_tx->set_defaults();
+            }
+            $risk_tx->_glean_parameters_from_parent($self);
+            return $self->_risk_detect($risk_tx);
 	}
     }
-    Carp::croak("Unable to locate fraud_detection module $fraud_detection"
+    croak("Unable to locate fraud_detection module $fraud_detection"
 		. " in \@INC under Fraud_Class_Path (\@Fraud_Class_Path"
 	        . " contains: @Fraud_Class_Path) (\@INC contains: @INC)");
 }
@@ -144,7 +144,7 @@ sub required_fields {
         push(@missing, $_) unless exists $content{$_};
     }
 
-    Carp::croak("missing required field(s): " . join(", ", @missing) . "\n")
+    croak("missing required field(s): " . join(", ", @missing) . "\n")
 	  if(@missing);
 }
 
@@ -172,7 +172,7 @@ sub remap_fields {
 sub submit {
     my($self) = @_;
 
-    Carp::croak("Processor subclass did not override submit function");
+    croak("Processor subclass did not override submit function");
 }
 
 sub dump_contents {
@@ -530,6 +530,14 @@ RISK).
 
 Retrieve or change the processor submission path (CHANGE AT YOUR OWN
 RISK).
+
+=head2 fraud_score();
+
+Retrieve or change the fraud score from any Business::FraudDetect plugin
+
+=head2 fraud_transaction_id();
+
+Retrieve or change the transaction id from any Business::FraudDetect plugin
 
 =head1 AUTHORS
 

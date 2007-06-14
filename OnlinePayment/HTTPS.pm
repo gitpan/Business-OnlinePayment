@@ -6,7 +6,7 @@ use URI::Escape;
 use Tie::IxHash;
 use base qw(Business::OnlinePayment);
 
-$VERSION = '0.06';
+$VERSION = '0.08';
 $DEBUG   = 0;
 
 BEGIN {
@@ -85,8 +85,8 @@ In the latter case, ordering is preserved (see L<Tie::IxHash> to do so
 when passing a hashref).
 
 Returns a list consisting of the page content as a string, the HTTP
-response code, and a list of key/value pairs representing the HTTP
-response headers.
+response code and message (i.e. "200 OK" or "404 Not Found"), and a list of
+key/value pairs representing the HTTP response headers.
 
 The options hashref supports setting headers and Content-Type:
 
@@ -139,14 +139,29 @@ sub https_get {
               keys %$post_data );
     }
 
+    $self->build_subs(qw( response_page response_code response_headers ));
+
     if ( $ssl_module eq 'Net::SSLeay' ) {
 
         import Net::SSLeay qw(get_https make_headers);
         my $headers = make_headers(%headers);
-        get_https( $self->server, $self->port, $path, $headers, "",
-            $opts->{"Content-Type"} );
-    }
-    elsif ( $ssl_module eq 'Crypt::SSLeay' ) {
+
+        my( $res_page, $res_code, @res_headers ) =
+          get_https( $self->server,
+                     $self->port,
+                     $path,
+                     $headers,
+                     "",
+                     $opts->{"Content-Type"},
+                   );
+
+        $self->response_page( $res_page );
+        $self->response_code( $res_code );
+        $self->response_headers( { @res_headers } );
+
+        ( $res_page, $res_code, @res_headers );
+
+    } elsif ( $ssl_module eq 'Crypt::SSLeay' ) {
 
         import HTTP::Request::Common qw(GET);
 
@@ -161,14 +176,19 @@ sub https_get {
         }
         my $res = $ua->request( GET($url) );
 
-        (
-            $res->content, $res->code,
-            map { $_ => $res->header($_) } $res->header_field_names
-        );
-    }
-    else {
+        my @res_headers = map { $_ => $res->header($_) }
+                              $res->header_field_names;
+
+        $self->response_page( $res->content );
+        $self->response_code( $res->code. ' '. $res->message );
+        $self->response_headers( { @res_headers } );
+
+        ( $res->content, $res->code. ' '. $res->message, @res_headers );
+
+    } else {
         die "unknown SSL module $ssl_module";
     }
+
 }
 
 =item https_post [ \%options ] SCALAR | HASHREF | FIELD => VALUE, ...
@@ -180,8 +200,8 @@ passing a hashref).
 Also accepts instead a simple scalar containing the raw content.
 
 Returns a list consisting of the page content as a string, the HTTP
-response code, and a list of key/value pairs representing the HTTP
-response headers.
+response code and message (i.e. "200 OK" or "404 Not Found"), and a list of
+key/value pairs representing the HTTP response headers.
 
 The options hashref supports setting headers and Content-Type:
 
@@ -232,6 +252,8 @@ sub https_post {
             map { "  $_ => " . $post_data->{$_} . "\n" } keys %$post_data );
     }
 
+    $self->build_subs(qw( response_page response_code response_headers ));
+
     if ( $ssl_module eq 'Net::SSLeay' ) {
 
         import Net::SSLeay qw(post_https make_headers make_form);
@@ -244,10 +266,23 @@ sub https_post {
         }
 
         my $raw_data = ref($post_data) ? make_form(%$post_data) : $post_data;
-        post_https( $self->server, $self->port, $self->path, $headers,
-            $raw_data, $opts->{"Content-Type"} );
-    }
-    elsif ( $ssl_module eq 'Crypt::SSLeay' ) {
+
+        my( $res_page, $res_code, @res_headers ) =
+          post_https( $self->server,
+                      $self->port,
+                      $self->path,
+                      $headers,
+                      $raw_data,
+                      $opts->{"Content-Type"},
+                    );
+
+        $self->response_page( $res_page );
+        $self->response_code( $res_code );
+        $self->response_headers( { @res_headers } );
+
+        ( $res_page, $res_code, @res_headers );
+
+    } elsif ( $ssl_module eq 'Crypt::SSLeay' ) {
 
         import HTTP::Request::Common qw(POST);
 
@@ -276,14 +311,19 @@ sub https_post {
             $res = $ua->request($req);
         }
 
-        (
-            $res->content, $res->code,
-            map { $_ => $res->header($_) } $res->header_field_names
-        );
-    }
-    else {
+        my @res_headers = map { $_ => $res->header($_) }
+                              $res->header_field_names;
+
+        $self->response_page( $res->content );
+        $self->response_code( $res->code. ' '. $res->message );
+        $self->response_headers( { @res_headers } );
+
+        ( $res->content, $res->code. ' '. $res->message, @res_headers );
+
+    } else {
         die "unknown SSL module $ssl_module";
     }
+
 }
 
 =back
