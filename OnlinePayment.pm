@@ -6,7 +6,7 @@ use Carp;
 
 require 5.005;
 
-$VERSION = '3.00_08';
+$VERSION = '3.00_09';
 $VERSION = eval $VERSION; # modperlstyle: convert the string into a number
 
 # Remember subclasses we have "wrapped" submit() with _pre_submit()
@@ -278,7 +278,9 @@ processors support all these transaction types).
 =item * action
 
 What to do with the transaction (currently available are: Normal
-Authorization, Authorization Only, Credit, Post Authorization)
+Authorization, Authorization Only, Credit, Post Authorization,
+Recurring Authorization, Modify Recurring Authorization,
+Cancel Recurring Authorization)
 
 =item * description
 
@@ -387,8 +389,7 @@ IP Address from which the transaction originated.
 
 =item * card_number
 
-Credit card number (obviously not required for non-credit card
-transactions).
+Credit card number.
 
 =item * cvv2
 
@@ -397,8 +398,15 @@ security code used to reduce credit card fraud.
 
 =item * expiration
 
-Credit card expiration (obviously not required for non-credit card
-transactions).
+Credit card expiration.
+
+=item * track1
+
+Track 1 on the magnetic stripe (Card present only)
+
+=item * track2
+
+Track 2 on the magnetic stripe (Card present only)
 
 =item * recurring billing
 
@@ -422,7 +430,9 @@ transfer.
 
 =item * account_type
 
-Account type for electronic checks or electronic funds transfer.
+Account type for electronic checks or electronic funds transfer.  Can be
+(case-insensitive): B<Personal Checking>, B<Personal Savings>,
+B<Business Checking> or B<Business Savings>.
 
 =item * account_name
 
@@ -455,6 +465,28 @@ electronic checks or electronic funds transfer.
 
 Customer's date of birth.  Typically only required for electronic
 checks or electronic funds transfer.
+
+=back
+
+=head3 RECURRING BILLING FIELDS
+
+=over 4
+
+=item * interval 
+
+Interval expresses the amount of time between billings: digits, whitespace
+and units (currently "days" or "months" in either singular or plural form).
+
+=item * start
+
+The date of the first transaction (used for processors which allow delayed
+start) expressed as YYYY-MM-DD.
+
+=item * periods
+
+The number of cycles of interval length for which billing should occur 
+(inclusive of 'trial periods' if the processor supports recurring billing
+at more than one rate)
 
 =back
 

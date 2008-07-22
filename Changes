@@ -1,6 +1,14 @@
 Revision history for Perl extension Business::OnlinePayment.
 
-3.00_08  unreleased
+3.00_09  Mon Jul 21 20:44:08 PDT 2008
+        - doc: Allowable values of account_type
+        - doc: Recurring billing actions and fields
+        - doc: new standard fields track1, track2, patch from Chris Travers,
+          thanks!
+        - B:OP:HTTPS: Normalize https_get and https_post response_code to
+          "NNN message" without HTTP version even when using Net::SSLeay.
+
+3.00_08  Wed Jun 13 17:51:14 PDT 2007
         - B:OP:HTTPS: set response_page, response_code, response_headers
         - B:OP:HTTPS: Normalize https_post (and debugging) response_code to
           "NNN message" even when using LWP/Crypt::SSLeay.

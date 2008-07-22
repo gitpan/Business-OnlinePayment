@@ -6,7 +6,7 @@ use URI::Escape;
 use Tie::IxHash;
 use base qw(Business::OnlinePayment);
 
-$VERSION = '0.08';
+$VERSION = '0.09';
 $DEBUG   = 0;
 
 BEGIN {
@@ -155,6 +155,8 @@ sub https_get {
                      $opts->{"Content-Type"},
                    );
 
+        $res_code =~ /^(HTTP\S+ )?(.*)/ and $res_code = $2;
+
         $self->response_page( $res_page );
         $self->response_code( $res_code );
         $self->response_headers( { @res_headers } );
@@ -275,6 +277,8 @@ sub https_post {
                       $raw_data,
                       $opts->{"Content-Type"},
                     );
+
+        $res_code =~ /^(HTTP\S+ )?(.*)/ and $res_code = $2;
 
         $self->response_page( $res_page );
         $self->response_code( $res_code );
