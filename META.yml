@@ -1,7 +1,7 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Business-OnlinePayment
-version:      3.00_09
+version:      3.00
 version_from: OnlinePayment.pm
 installdirs:  site
 requires:

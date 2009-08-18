@@ -1,5 +1,9 @@
 Revision history for Perl extension Business::OnlinePayment.
 
+3.00     Mon Aug 17 15:55:11 PDT 2009
+        - It finally happened.
+        - doc: add repo info
+
 3.00_09  Mon Jul 21 20:44:08 PDT 2008
         - doc: Allowable values of account_type
         - doc: Recurring billing actions and fields

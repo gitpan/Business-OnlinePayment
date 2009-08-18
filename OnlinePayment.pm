@@ -6,7 +6,7 @@ use Carp;
 
 require 5.005;
 
-$VERSION = '3.00_09';
+$VERSION = '3.00';
 $VERSION = eval $VERSION; # modperlstyle: convert the string into a number
 
 # Remember subclasses we have "wrapped" submit() with _pre_submit()
@@ -579,10 +579,34 @@ Jason Kohles, email@jasonkohles.com
 
 Phil Lobbes E<lt>phil at perkpartners dot comE<gt>
 
+=head1 HOMEPAGE
+
+Homepage:  http://420.am/business-onlinepayment/
+
+Development:  http://420.am/business-onlinepayment/ng.html
+
 =head1 MAILING LIST
 
 Please direct current development questions, patches, etc. to the mailing list:
 http://420.am/cgi-bin/mailman/listinfo/bop-devel/
+
+=head1 REPOSITORY
+
+The code is available from our public CVS repository:
+
+  export CVSROOT=":pserver:anonymous@cvs.freeside.biz:/home/cvs/cvsroot"
+  cvs login
+  # The password for the user `anonymous' is `anonymous'.
+  cvs checkout Business-OnlinePayment
+
+Or on the web:
+
+  http://freeside.biz/cgi-bin/viewvc.cgi/Business-OnlinePayment/
+
+Many (but by no means all!) processor plugins are also available in the same
+repository, see:
+
+  http://freeside.biz/cgi-bin/viewvc.cgi/
 
 =head1 DISCLAIMER
 
