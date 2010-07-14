@@ -1,12 +1,23 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Business-OnlinePayment
-version:      3.00
-version_from: OnlinePayment.pm
-installdirs:  site
+--- #YAML:1.0
+name:               Business-OnlinePayment
+version:            3.01
+abstract:           ~
+author:
+    - Ivan Kohler <ivan-business-onlinepayment@420.am>
+license:            unknown
+distribution_type:  module
+configure_requires:
+    ExtUtils::MakeMaker:  0
+build_requires:
+    ExtUtils::MakeMaker:  0
 requires:
-    URI::Escape:                   0
-    Tie::IxHash:                   0
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+    Net::HTTPS::Any:  0
+    Tie::IxHash:      0
+no_index:
+    directory:
+        - t
+        - inc
+generated_by:       ExtUtils::MakeMaker version 6.55_02
+meta-spec:
+    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
+    version:  1.4

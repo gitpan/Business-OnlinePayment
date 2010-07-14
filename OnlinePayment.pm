@@ -1,35 +1,80 @@
 package Business::OnlinePayment;
 
 use strict;
-use vars qw($VERSION);
+use vars qw($VERSION %_info_handler);
 use Carp;
 
 require 5.005;
 
-$VERSION = '3.00';
+$VERSION = '3.01';
 $VERSION = eval $VERSION; # modperlstyle: convert the string into a number
 
 # Remember subclasses we have "wrapped" submit() with _pre_submit()
 my %Presubmit_Added = ();
 
-my %fields = (
-    authorization        => undef,
-    error_message        => undef,
-    failure_status       => undef,
-    fraud_detect         => undef,
-    is_success           => undef,
-    maximum_risk         => undef,
-    path                 => undef,
-    port                 => undef,
-    require_avs          => undef,
-    result_code          => undef,
-    server               => undef,
-    server_response      => undef,
-    test_transaction     => undef,
-    transaction_type     => undef,
-    fraud_score          => undef,
-    fraud_transaction_id => undef,
+my @methods = qw(
+    authorization
+    order_number
+    error_message
+    failure_status
+    fraud_detect
+    is_success
+    maximum_risk
+    path
+    port
+    require_avs
+    result_code
+    server
+    server_response
+    test_transaction
+    transaction_type
+    fraud_score
+    fraud_transaction_id
+    response_code
+    response_header
+    response_page
 );
+
+#fallback
+sub _info {
+  my $class = shift;
+  ( my $gw = $class ) =~ s/^Business::OnlinePayment:://;
+  {
+    'info_compat'    => '0.00',
+    'gateway_name'   => $gw,
+    'module_notes'   => "Module does not yet provide info.",
+  };
+}
+
+#allow classes to declare info in a flexible way, but return normalized info
+%_info_handler = (
+  'supported_types'   => sub {
+    my( $class, $v ) = @_;
+    my $types = ref($v) ? $v : [ $v ];
+    $types = { map { $_=>1 } @$types } if ref($v) eq 'ARRAY';
+    $types;
+  },
+  'supported_actions' => sub {
+    my( $class, $v ) = @_;
+    return $v if ref($v) eq 'HASH';
+    $v = [ $v ] unless ref($v);
+    my $types = $class->info('supported_types');
+    { map { $_ => $v } keys %$types };
+  },
+);
+
+sub info {
+  my $class = shift; #class or object
+  my $info = $class->_info;
+  if ( @_ ) {
+    my $key = shift;
+    exists($_info_handler{$key})
+      ? &{ $_info_handler{$key} }( $class, $info->{$key} )
+      : $info->{$key};
+  } else {
+    wantarray ? ( keys %$info ) : [ keys %$info ];
+  }
+}
 
 sub new {
     my($class,$processor,%data) = @_;
@@ -41,7 +86,7 @@ sub new {
     croak("unknown processor $processor ($@)") if $@;
 
     my $self = bless {processor => $processor}, $subclass;
-    $self->build_subs(keys %fields);
+    $self->build_subs(@methods);
 
     if($self->can("set_defaults")) {
         $self->set_defaults(%data);
@@ -112,7 +157,7 @@ sub _pre_submit {
               unless ( $@ =~ m/^Can\'t locate/ );
         } else {
             my $risk_tx = bless( { processor => $fraud_detection }, $subclass );
-            $risk_tx->build_subs(keys %fields);
+            $risk_tx->build_subs(@methods);
             if ($risk_tx->can('set_defaults')) {
                 $risk_tx->set_defaults();
             }
@@ -197,6 +242,17 @@ sub build_subs {
     }
 }
 
+#helper method
+
+sub silly_bool {
+  my( $self, $value ) = @_;
+  return 1 if $value =~ /^[yt]/i;
+  return 0 if $value =~ /^[fn]/i;
+  #return 1 if $value == 1;
+  #return 0 if $value == 0;
+  $value; #die??
+}
+
 1;
 
 __END__
@@ -230,9 +286,9 @@ Business::OnlinePayment - Perl extension for online payment processing
 Business::OnlinePayment is a generic module for processing payments
 through online credit card processors, electronic cash systems, etc.
 
-=head1 METHODS AND FUNCTIONS
+=head1 CONSTRUCTOR
 
-=head2 new($processor, %processor_options);
+=head2 new($processor, %processor_options)
 
 Create a new Business::OnlinePayment object, $processor is required,
 and defines the online processor to use.  If necessary, processor
@@ -243,7 +299,9 @@ supply reasonable defaults for this information, override the defaults
 only if absolutely necessary (especially path), as the processor
 module was probably written with a specific target script in mind.
 
-=head2 content(%content);
+=head1 TRANSACTION SETUP METHODS
+
+=head2 content(%content)
 
 The information necessary for the transaction, this tends to vary a
 little depending on the processor, so we have chosen to use a system
@@ -254,48 +312,91 @@ correct fields in the backend.  The currently defined fields are:
 
 =over 4
 
-=item * login
+=item login
 
 Your login name to use for authentication to the online processor.
 
-=item * password
+=item password
 
 Your password to use for authentication to the online processor.
 
 =back
 
-=head3 GENERAL TRANSACTION FIELDS
+=head3 REQUIRED TRANSACTION FIELDS
 
 =over 4
 
-=item * type
+=item type
 
 Transaction type, supported types are: CC (credit card), ECHECK
 (electronic check) and LEC (phone bill billing).  Deprecated types
-are: Visa, MasterCard, American Express, Discover, Check (not all
-processors support all these transaction types).
+are: Visa, MasterCard, American Express, Discover, Check.  Not all
+processors support all transaction types.
 
-=item * action
+=item action
 
-What to do with the transaction (currently available are: Normal
-Authorization, Authorization Only, Credit, Post Authorization,
-Recurring Authorization, Modify Recurring Authorization,
-Cancel Recurring Authorization)
+What action being taken by this transaction. Currently available are:
 
-=item * description
+=over 8
+
+=item Normal Authorization
+
+=item Authorization Only
+
+=item Post Authorization
+
+=item Void
+
+=item Credit
+
+=item Recurring Authorization
+
+=item Modify Recurring Authorization
+
+=item Cancel Recurring Authorization
+
+=back
+
+=item amount
+
+The amount of the transaction.  No dollar signs or currency identifiers,
+just a whole or floating point number (i.e. 26, 26.1 or 26.13).
+
+=back
+
+=head3 OPTIONAL TRANSACTION FIELDS
+
+=over 4
+
+=item description
 
 A description of the transaction (used by some processors to send
 information to the client, normally not a required field).
 
-=item * amount
-
-The amount of the transaction, most processors don't want dollar signs
-and the like, just a floating point number.
-
-=item * invoice_number
+=item invoice_number
 
 An invoice number, for your use and not normally required, many
 processors require this field to be a numeric only field.
+
+=item po_number
+
+Purchase order number (normally not required).
+
+=item tax
+
+Tax amount (portion of amount field, not added to it).
+
+=item freight
+
+Freight amount (portion of amount field, not added to it).
+
+=item duty
+
+Duty amount (portion of amount field, not added to it).
+
+=item tax_exempt
+
+Tax exempt flag (i.e. TRUE, FALSE, T, F, YES, NO, Y, N, 1, 0).
 
 =back
 
@@ -303,81 +404,81 @@ processors require this field to be a numeric only field.
 
 =over 4
 
-=item * customer_id
+=item customer_id
 
 A customer identifier, again not normally required.
 
-=item * name
+=item name
 
 The customer's name, your processor may not require this.
 
-=item * first_name
+=item first_name
 
-=item * last_name
+=item last_name
 
 The customer's first and last name as separate fields.
 
-=item * company
+=item company
 
 The customer's company name, not normally required.
 
-=item * address
+=item address
 
 The customer's address (your processor may not require this unless you
 are requiring AVS Verification).
 
-=item * city
+=item city
 
 The customer's city (your processor may not require this unless you
 are requiring AVS Verification).
 
-=item * state
+=item state
 
 The customer's state (your processor may not require this unless you
 are requiring AVS Verification).
 
-=item * zip
+=item zip
 
 The customer's zip code (your processor may not require this unless
 you are requiring AVS Verification).
 
-=item * country
+=item country
 
 Customer's country.
 
-=item * ship_first_name
+=item ship_first_name
 
-=item * ship_last_name
+=item ship_last_name
 
-=item * ship_company
+=item ship_company
 
-=item * ship_address
+=item ship_address
 
-=item * ship_city
+=item ship_city
 
-=item * ship_state
+=item ship_state
 
-=item * ship_zip
+=item ship_zip
 
-=item * ship_country
+=item ship_country
 
 These shipping address fields may be accepted by your processor.
 Refer to the description for the corresponding non-ship field for
 general information on each field.
 
-=item * phone
+=item phone
 
 Customer's phone number.
 
-=item * fax
+=item fax
 
 Customer's fax number.
 
-=item * email
+=item email
 
 Customer's email address.
 
-=item * customer_ip
+=item customer_ip
 
 IP Address from which the transaction originated.
 
@@ -387,28 +488,41 @@ IP Address from which the transaction originated.
 
 =over 4
 
-=item * card_number
+=item card_number
 
 Credit card number.
 
-=item * cvv2
+=item expiration
+
+Credit card expiration.
+
+=item cvv2
 
 CVV2 number (also called CVC2 or CID) is a three- or four-digit
 security code used to reduce credit card fraud.
 
-=item * expiration
+=item card_token
 
-Credit card expiration.
+If supported by your gateway, you can pass a card_token instead of a
+card_number and expiration.
 
-=item * track1
+=cut
+
+#=item card_response
+#
+#Some card_token schemes implement a challenge/response handshake.  In those
+#cases, this field is used for the response.  In most cases the handshake
+#it taken care of by the gateway module.
+
+=item track1
 
 Track 1 on the magnetic stripe (Card present only)
 
-=item * track2
+=item track2
 
 Track 2 on the magnetic stripe (Card present only)
 
-=item * recurring billing
+=item recurring billing
 
 Recurring billing flag
 
@@ -418,53 +532,54 @@ Recurring billing flag
 
 =over 4
 
-=item * account_number
+=item account_number
 
-Bank account number for electronic checks or electronic funds
-transfer.
+Bank account number
 
-=item * routing_code
+=item routing_code
 
-Bank's routing code for electronic checks or electronic funds
-transfer.
+Bank's routing code
 
-=item * account_type
+=item account_type
 
-Account type for electronic checks or electronic funds transfer.  Can be
-(case-insensitive): B<Personal Checking>, B<Personal Savings>,
-B<Business Checking> or B<Business Savings>.
+Account type.  Can be (case-insensitive): B<Personal Checking>,
+B<Personal Savings>, B<Business Checking> or B<Business Savings>.
 
-=item * account_name
+=item account_name
 
-Account holder's name for electronic checks or electronic funds
-transfer.
+Account holder's name.
 
-=item * bank_name
+=item bank_name
 
-Bank's name for electronic checks or electronic funds transfer.
+Bank name.
 
-=item * check_type
+=item bank_city
 
-Check type for electronic checks or electronic funds transfer.
+Bank city.
 
-=item * customer_org
+=item bank_state
+
+Bank state.
+
+=item check_type
+
+Check type.
+
+=item customer_org
 
 Customer organization type.
 
-=item * customer_ssn
+=item customer_ssn
 
-Customer's social security number.  Typically only required for
-electronic checks or electronic funds transfer.
+Customer's social security number.
 
-=item * license_num
+=item license_num
 
-Customer's driver's license number.  Typically only required for
-electronic checks or electronic funds transfer.
+Customer's driver's license number.
 
-=item * license_dob
+=item license_dob
 
-Customer's date of birth.  Typically only required for electronic
-checks or electronic funds transfer.
+Customer's date of birth.
 
 =back
 
@@ -472,17 +587,17 @@ checks or electronic funds transfer.
 
 =over 4
 
-=item * interval 
+=item interval 
 
 Interval expresses the amount of time between billings: digits, whitespace
 and units (currently "days" or "months" in either singular or plural form).
 
-=item * start
+=item start
 
 The date of the first transaction (used for processors which allow delayed
 start) expressed as YYYY-MM-DD.
 
-=item * periods
+=item periods
 
 The number of cycles of interval length for which billing should occur 
 (inclusive of 'trial periods' if the processor supports recurring billing
@@ -490,16 +605,39 @@ at more than one rate)
 
 =back
 
-=head2 submit();
+=head2 test_transaction()
+
+Most processors provide a test mode, where submitted transactions will
+not actually be charged or added to your batch, calling this function
+with a true argument will turn that mode on if the processor supports
+it, or generate a fatal error if the processor does not support a test
+mode (which is probably better than accidentally making real charges).
+
+=head2 require_avs()
+
+Providing a true argument to this module will turn on address
+verification (if the processor supports it).
+
+=head1 TRANSACTION SUBMISSION METHOD
+
+=head2 submit()
 
 Submit the transaction to the processor for completion
 
-=head2 is_success();
+=head1 TRANSACTION RESULT METHODS
+
+=head2 is_success()
 
 Returns true if the transaction was submitted successfully, false if
 it failed (or undef if it has not been submitted yet).
 
-=head2 failure_status();
+=head2 error_message()
+
+If the transaction has been submitted but was not accepted, this
+function will return the provided error message (if any) that the
+processor returned.
+
+=head2 failure_status()
 
 If the transaction failed, it can optionally return a specific failure
 status (normalized, not gateway-specific).  Currently defined statuses
@@ -512,72 +650,131 @@ newest processor modules, and that, even if supported, a failure
 status is an entirely optional field that is only set for specific
 kinds of failures.
 
-=head2 result_code();
+=head2 authorization()
+
+If the transaction has been submitted and accepted, this function will
+provide you with the authorization code that the processor returned.
+Store this if you would like to run inquiries or refunds on the transaction
+later.
+
+=head2 order_number()
+
+The unique order number for the transaction generated by the gateway.  Store
+this if you would like to run inquiries or refunds on the transaction later.
+
+=head2 card_token()
+
+If supported by your gateway, a card_token can be used in a subsequent
+transaction to refer to a card number.
+
+=head2 fraud_score()
+
+Retrieve or change the fraud score from any Business::FraudDetect plugin
+
+=head2 fraud_transaction_id()
+
+Retrieve or change the transaction id from any Business::FraudDetect plugin
+
+=head2 response_code()
+
+=head2 response_headers()
+
+=head2 response_page()
+
+These three fields are set by some processors (especially those which use
+HTTPS) when the transaction fails at the communication level rather than
+as a transaction.
+
+response_code is the HTTP response code and message, i.e.
+'500 Internal Server Error'.
+
+response_headers is a hash reference of the response headers
+
+response_page is the raw content.
+
+=head2 result_code()
 
 Returns the precise result code that the processor returned, these are
 normally one letter codes that don't mean much unless you understand
 the protocol they speak, you probably don't need this, but it's there
 just in case.
 
-=head2 test_transaction();
+=head2 avs_code()
 
-Most processors provide a test mode, where submitted transactions will
-not actually be charged or added to your batch, calling this function
-with a true argument will turn that mode on if the processor supports
-it, or generate a fatal error if the processor does not support a test
-mode (which is probably better than accidentally making real charges).
+=head2 cvv2_response()
 
-=head2 require_avs();
+=head1 MISCELLANEOUS INTERNAL METHODS
 
-Providing a true argument to this module will turn on address
-verification (if the processor supports it).
-
-=head2 transaction_type();
+=head2 transaction_type()
 
 Retrieve the transaction type (the 'type' argument to contents()).
 Generally only used internally, but provided in case it is useful.
 
-=head2 error_message();
-
-If the transaction has been submitted but was not accepted, this
-function will return the provided error message (if any) that the
-processor returned.
-
-=head2 authorization();
-
-If the transaction has been submitted and accepted, this function will
-provide you with the authorization code that the processor returned.
-
-=head2 server();
+=head2 server()
 
 Retrieve or change the processor submission server address (CHANGE AT
 YOUR OWN RISK).
 
-=head2 port();
+=head2 port()
 
 Retrieve or change the processor submission port (CHANGE AT YOUR OWN
 RISK).
 
-=head2 path();
+=head2 path()
 
 Retrieve or change the processor submission path (CHANGE AT YOUR OWN
 RISK).
 
-=head2 fraud_score();
+=head1 HELPER METHODS FOR GATEWAY MODULE AUTHORS
 
-Retrieve or change the fraud score from any Business::FraudDetect plugin
+=head2 build_subs( @sub_names )
 
-=head2 fraud_transaction_id();
+Build setter/getter subroutines for new return values.
 
-Retrieve or change the transaction id from any Business::FraudDetect plugin
+=head2 get_fields( @fields )
+
+Get the named fields if they are defined.
+
+=head2 remap_fields( %map )
+
+Remap field content (and stuff it back into content).
+
+=head2 required_fields( @fields )
+
+Croaks if any of the required fields are not present.
+
+=head2 dump_contents
+
+=head2 silly_bool( $value )
+
+Returns 0 if the value starts with y, Y, t or T.
+Returns 1 if the value starts with n, N, f or F.
+Otherwise returns the value itself.
+
+Use this for handling boolean content like tax_exempt.
 
 =head1 AUTHORS
 
+(v2 series)
+
 Jason Kohles, email@jasonkohles.com
 
-(v3 rewrite) Ivan Kohler <ivan-business-onlinepayment@420.am>
+(v3 rewrite)
+
+Ivan Kohler <ivan-business-onlinepayment@420.am>
 
 Phil Lobbes E<lt>phil at perkpartners dot comE<gt>
+
+=head1 COPYRIGHT
+
+Copyright (c) 1999-2004 Jason Kohles
+Copyright (c) 2004 Ivan Kohler
+Copyright (c) 2007-2010 Freeside Internet Services, Inc.
+
+All rights reserved.
+
+This program is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
 
 =head1 HOMEPAGE
 

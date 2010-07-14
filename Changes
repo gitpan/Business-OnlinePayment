@@ -1,5 +1,19 @@
 Revision history for Perl extension Business::OnlinePayment.
 
+3.01    Wed Jul 14 13:54:57 PDT 2010
+        - Add optional transaction fields to documentation: tax, freight,
+          duty, tax_exempt, po_number.
+        - Add return fields to documentation: order_number, avs_code,
+          cvv2_response, response_code, response_headers, response_page.
+        - Add beginning of introspection interface for processor modules.
+        - Add electronic check fields to documentation: bank_city, bank_state
+        - Add clarification to notes_for_module_writers_v3 on authorization vs.
+          order_number
+        - (3.01_03) Add ECHECK_void_requires_account to introspection
+        - (3.01_04) Refactor most of the B:OP:HTTPS code out to Net:HTTPS::Any
+        - (3.01_04) Add card_token documentation.  Add token_support to
+          introspection.
+
 3.00     Mon Aug 17 15:55:11 PDT 2009
         - It finally happened.
         - doc: add repo info

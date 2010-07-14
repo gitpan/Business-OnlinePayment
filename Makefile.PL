@@ -8,14 +8,8 @@ WriteMakefile(
     'PMLIBDIRS'    => [ 'OnlinePayment', 'FraudDetect' ],
     'NORECURS'     => 1, # dont descend into subdirectories
     'PREREQ_PM'    => { 
-                        # for HTTPS (maybe it should be a separate dist?)
-                        'URI::Escape' => 0,
-                        'Tie::IxHash' => 0,
-
-                        # 'Net::SSLeay' => 0,
-                        # or 'Crypt::SSLeay' => 0,
-                        #    'URI
-
+                        'Tie::IxHash'     => 0,
+                        'Net::HTTPS::Any' => 0,
                       },
     #'dist'         => {CI => 'ci -l'},
 );
