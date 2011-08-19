@@ -6,7 +6,7 @@ use Carp;
 
 require 5.005;
 
-$VERSION = '3.01';
+$VERSION = '3.02';
 $VERSION = eval $VERSION; # modperlstyle: convert the string into a number
 
 # Remember subclasses we have "wrapped" submit() with _pre_submit()
@@ -50,16 +50,16 @@ sub _info {
 %_info_handler = (
   'supported_types'   => sub {
     my( $class, $v ) = @_;
-    my $types = ref($v) ? $v : [ $v ];
-    $types = { map { $_=>1 } @$types } if ref($v) eq 'ARRAY';
+    my $types = ref($v) ? $v : defined($v) ? [ $v ] : [];
+    $types = { map { $_=>1 } @$types } if ref($types) eq 'ARRAY';
     $types;
   },
   'supported_actions' => sub {
     my( $class, $v ) = @_;
-    return $v if ref($v) eq 'HASH';
+    return %$v if ref($v) eq 'HASH';
     $v = [ $v ] unless ref($v);
-    my $types = $class->info('supported_types');
-    { map { $_ => $v } keys %$types };
+    my $types = $class->info('supported_types') || {};
+    ( map { $_ => $v } keys %$types );
   },
 );
 
@@ -398,6 +398,11 @@ Duty amount (portion of amount field, not added to it).
 
 Tax exempt flag (i.e. TRUE, FALSE, T, F, YES, NO, Y, N, 1, 0).
 
+=item currency
+
+Currency, specified as an ISO 4217 three-letter code, such as USD, CAD, EUR,
+AUD, DKK, GBP, JPY, NZD, etc.
+
 =back
 
 =head3 CUSTOMER INFO FIELDS
@@ -522,7 +527,7 @@ Track 1 on the magnetic stripe (Card present only)
 
 Track 2 on the magnetic stripe (Card present only)
 
-=item recurring billing
+=item recurring_billing
 
 Recurring billing flag
 
@@ -769,7 +774,7 @@ Phil Lobbes E<lt>phil at perkpartners dot comE<gt>
 
 Copyright (c) 1999-2004 Jason Kohles
 Copyright (c) 2004 Ivan Kohler
-Copyright (c) 2007-2010 Freeside Internet Services, Inc.
+Copyright (c) 2007-2011 Freeside Internet Services, Inc.
 
 All rights reserved.
 

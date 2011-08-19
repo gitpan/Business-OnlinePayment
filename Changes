@@ -1,5 +1,14 @@
 Revision history for Perl extension Business::OnlinePayment.
 
+3.02    Fri Aug 19 16:20:04 PDT 2011
+        - Fix fatal error calling ->info('supported_actions') on a gateway that
+          does not yet support introspection (e.g. AuthorizeNet)
+        - Fix introspection with a complicated supported_actions
+        - Documentation fix for recurring_billing flag
+        - Add optional transaction field to documentation: currency
+        - Fix spelling mistake in preCharge.pm POD, thanks to gregor herrmann,
+          Closes: CPAN#69647
+
 3.01    Wed Jul 14 13:54:57 PDT 2010
         - Add optional transaction fields to documentation: tax, freight,
           duty, tax_exempt, po_number.

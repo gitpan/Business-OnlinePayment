@@ -11,6 +11,7 @@ t/bop_https.t
 t/bop.t
 t/fd_precharge.t
 t/pod.t
+t/introspection.t
 notes_for_module_writers
 notes_for_module_writers_v3
 META.yml                                 Module meta-data (added by MakeMaker)

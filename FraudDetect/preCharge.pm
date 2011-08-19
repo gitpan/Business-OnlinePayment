@@ -207,7 +207,7 @@ Business::FraudDetect::preCharge - backend for Business::FraudDetect (part of Bu
 
 =head1 DESCRIPTION
 
-This module provides a driver for the preCharge Risk Management Solutions API Verison 1.7 (16 Jan 2006).
+This module provides a driver for the preCharge Risk Management Solutions API Version 1.7 (16 Jan 2006).
 
 See L<Business::OnlinePayment> and L<Business::FraudDetect> for more information.  
 
