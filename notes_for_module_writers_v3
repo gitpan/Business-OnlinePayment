@@ -4,6 +4,9 @@ These are the module writer's notes for v3.  See the regular
 
 - If your gateway is HTTPS-based, use (or convert to)
   Business::OnlinePayment::HTTPS !!
+  Note: The correct thing for modern B:OP: gateway modules that need to
+   speak HTTPS to do is to use Business::OnlinePayment::HTTPS and depend on
+   "Net::HTTPS::Any" (since B:OP itself doesn't).
 
 
 - Handling failures:

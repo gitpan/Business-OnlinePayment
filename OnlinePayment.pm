@@ -6,7 +6,7 @@ use Carp;
 
 require 5.005;
 
-$VERSION = '3.02';
+$VERSION = '3.03_02';
 $VERSION = eval $VERSION; # modperlstyle: convert the string into a number
 
 # Remember subclasses we have "wrapped" submit() with _pre_submit()
@@ -33,7 +33,11 @@ my @methods = qw(
     response_code
     response_header
     response_page
+    avs_code
+    cvv2_response
 );
+
+__PACKAGE__->build_subs(@methods);
 
 #fallback
 sub _info {
@@ -86,7 +90,6 @@ sub new {
     croak("unknown processor $processor ($@)") if $@;
 
     my $self = bless {processor => $processor}, $subclass;
-    $self->build_subs(@methods);
 
     if($self->can("set_defaults")) {
         $self->set_defaults(%data);
@@ -157,7 +160,6 @@ sub _pre_submit {
               unless ( $@ =~ m/^Can\'t locate/ );
         } else {
             my $risk_tx = bless( { processor => $fraud_detection }, $subclass );
-            $risk_tx->build_subs(@methods);
             if ($risk_tx->can('set_defaults')) {
                 $risk_tx->set_defaults();
             }
@@ -270,15 +272,24 @@ Business::OnlinePayment - Perl extension for online payment processing
                         type        => 'Visa',
                         amount      => '49.95',
                         card_number => '1234123412341238',
-                        expiration  => '0100',
+                        expiration  => '06/15',
                         name        => 'John Q Doe',
                        );
-  $transaction->submit();
-  
-  if($transaction->is_success()) {
-    print "Card processed successfully: ", $transaction->authorization(), "\n";
+
+  eval { $transaction->submit(); };
+
+  if ( $@ ) {
+
+    print "$processor error: $@\n";
+
   } else {
-    print "Card was rejected: ", $transaction->error_message(), "\n";
+  
+    if ( $transaction->is_success() ) {
+      print "Card processed successfully: ". $transaction->authorization()."\n";
+    } else {
+      print "Card was rejected: ". $transaction->error_message(). "\n";
+    }
+
   }
 
 =head1 DESCRIPTION
@@ -344,6 +355,8 @@ What action being taken by this transaction. Currently available are:
 =item Authorization Only
 
 =item Post Authorization
+
+=item Reverse Authorization
 
 =item Void
 
@@ -499,7 +512,7 @@ Credit card number.
 
 =item expiration
 
-Credit card expiration.
+Credit card expiration, MM/YY.
 
 =item cvv2
 
@@ -627,14 +640,19 @@ verification (if the processor supports it).
 
 =head2 submit()
 
-Submit the transaction to the processor for completion
+Submit the transaction to the processor for completion.
+
+If there is a gateway communication error or other "meta" , the submit method
+will throw a fatal exception.  You can catch this with eval {} if you would
+like to treat gateway co
 
 =head1 TRANSACTION RESULT METHODS
 
 =head2 is_success()
 
-Returns true if the transaction was submitted successfully, false if
-it failed (or undef if it has not been submitted yet).
+Returns true if the transaction was approved by the gateway, false if 
+it was submitted but not approved, or undef if it has not been 
+submitted yet.
 
 =head2 error_message()
 
@@ -650,10 +668,8 @@ are: "expired", "nsf" (non-sufficient funds), "stolen", "pickup",
 "blacklisted" and "declined" (card/transaction declines only, not
 other errors).
 
-Note that (as of Aug 2006) this is only supported by some of the
-newest processor modules, and that, even if supported, a failure
-status is an entirely optional field that is only set for specific
-kinds of failures.
+Note that not all processor modules support this, and that if supported,
+it may not be set for all declines.
 
 =head2 authorization()
 
@@ -774,7 +790,7 @@ Phil Lobbes E<lt>phil at perkpartners dot comE<gt>
 
 Copyright (c) 1999-2004 Jason Kohles
 Copyright (c) 2004 Ivan Kohler
-Copyright (c) 2007-2011 Freeside Internet Services, Inc.
+Copyright (c) 2007-2014 Freeside Internet Services, Inc.
 
 All rights reserved.
 
@@ -794,21 +810,18 @@ http://420.am/cgi-bin/mailman/listinfo/bop-devel/
 
 =head1 REPOSITORY
 
-The code is available from our public CVS repository:
+The code is available from our public git repository:
 
-  export CVSROOT=":pserver:anonymous@cvs.freeside.biz:/home/cvs/cvsroot"
-  cvs login
-  # The password for the user `anonymous' is `anonymous'.
-  cvs checkout Business-OnlinePayment
+  git clone git://git.freeside.biz/Business-OnlinePayment.git
 
 Or on the web:
 
-  http://freeside.biz/cgi-bin/viewvc.cgi/Business-OnlinePayment/
+  http://freeside.biz/gitweb/?p=Business-OnlinePayment.git
 
 Many (but by no means all!) processor plugins are also available in the same
 repository, see:
 
-  http://freeside.biz/cgi-bin/viewvc.cgi/
+  http://freeside.biz/gitweb/
 
 =head1 DISCLAIMER
 

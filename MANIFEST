@@ -12,7 +12,9 @@ t/bop.t
 t/fd_precharge.t
 t/pod.t
 t/introspection.t
+t/override.t
 notes_for_module_writers
 notes_for_module_writers_v3
 META.yml                                 Module meta-data (added by MakeMaker)
 TODO
+META.json                                Module JSON meta-data (added by MakeMaker)

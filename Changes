@@ -1,5 +1,13 @@
 Revision history for Perl extension Business::OnlinePayment.
 
+3.03    unreleased
+        - Document Reverse Authorization action
+        - Document expiration is MM/YY and fix the example
+        - Document repository moved from CVS to git
+        - Add avs_code and cvv2_response to build_subs, they're standard fields
+        - Document best-practice eval of the submit() method in example
+        - Rework build_subs(), thanks to Michal Schwern, closes: CPAN#22073
+
 3.02    Fri Aug 19 16:20:04 PDT 2011
         - Fix fatal error calling ->info('supported_actions') on a gateway that
           does not yet support introspection (e.g. AuthorizeNet)
