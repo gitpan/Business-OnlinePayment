@@ -1,6 +1,6 @@
 Revision history for Perl extension Business::OnlinePayment.
 
-3.03    unreleased
+3.03    Tue Apr 29 11:14:25 PDT 2014
         - Document Reverse Authorization action
         - Document expiration is MM/YY and fix the example
         - Document repository moved from CVS to git

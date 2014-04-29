@@ -20,4 +20,4 @@ no_index:
 requires:
   Net::HTTPS::Any: 0
   Tie::IxHash: 0
-version: 3.03_02
+version: 3.03
